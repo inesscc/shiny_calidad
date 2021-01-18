@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Aplicación Shiny para paquete “Calidad”</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="SDT - INE" />
+    <meta name="date" content="2021-01-14" />
+    <link rel="stylesheet" href="xaringan-themer.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Aplicación Shiny para paquete “Calidad”
+## Proyecto Estratégico de Servicios Compartidos
+### SDT - INE
+### 2021-01-14
+
+---
+
+
+
+
+
+
+
+## Temario
+1. Objetivos
+1. Sobre Shiny
+1. Soportes para Shiny
+    1. Shiny Server (open source)
+    1. ShinyProxy
+1. Requerimientos
+    1. Acceso servidor con clave SSH
+    1. Necesidad de modificar archivos .conf (subida de archivos)
+1. Estructura App.
+1. Plazos
+1. Recomendaciones para elaborar una Shiny App.
+---
+# Objetivos:
+***.black[.center[Facilitar el acceso y utilización de las funcionalidades del paquete de "Calidad" desarrollado por el proyecto estratégico de servicios compartidos , para usuarios sin conocimiento de R, a traves del desarrollo de una aplicación web interactiva con el paquete Shiny de Rstudio.]]***
+
+### Específicos
+- Probar, evaluar y documentar diferentes tipos de soportes de la aplicación para usuarios internos (y externos). 
+
+- Generar información sobre las mejores alternativas de soportes en torno a las necesidades de:  **.black[Seguridad]**, **.black[Autenticación de usuarios]** y **.black[Acceso para multiples usuarios]**
+
+---
+# Shiny
+#### .center[Shiny es un paquete (framework) de Rstudio que permite construir aplicaciones web interactivas a partir de los scripts de R. La interactividad de estas aplicaciones permite manipular los datos sin tener que manipular el código.]
+
+**.black[¿Por qué Shiny?]**
+
+- Para crear aplicaciones web de código abierto de manera gratuita.
+- Poco esfuerzo y grandes resultados.
+- Puede ser desarrollado por usuarios de R. Literalmente, no necesitas un desarrollador frontend.
+- Permite acceder a todo el potencial de análisis y procesamiento estadístico que posee R, sin necesidad de trabajar con el código.
+
+**.black[En resumen, puede crear hermosas aplicaciones web interactivas directamente desde R.]**
+
+
+---
+
+class: center, middle
+
+# Pero....¿Como se despliega?
+
+---
+
+# Shiny Server (open source)1
+
+**.black[Pros:]**
+- Aloja cada aplicación en su propia dirección web. 
+- Inicia automáticamente la aplicación cuando un usuario visite la dirección.
+
+**.black[Contras:]**
+- Soporta un total de 20 usuarios conectados simultaneamente.
+- Todos los usuarios se conectan con el mismo proceso.
+- Shiny Server Pro cuesta $11.950 USD/año
+
+La arquitectura de Shiny Server open source, se presenta en el siguiente esquema:
+&lt;img src="Shiny-Server-Opensource.png" width="60%" style="display: block; margin: auto;" /&gt;
+
+---
+
+## ShinyProxy 
+**.black[Pros:]**    ***.black[Basado en docker]***
+- Permite la autenticación y autorización con LDAP, facilita el tráfico (sobre TLS).
+- No tiene límites de usuarios en una aplicación.
+- Para cada usuario, inicia un contenedor con aplicación.
+- Se puede configurar para detener el contenedor cuando no esté en uso.
+- Puede alojar aplicaciones web desarrolladas por Python (Dash).
+
+**.black[Contras:]**
+- Cada usuario que inicializa un contenedor, puede consumir la RAM del servidor.
+- El usuario debe esperar hasta que se inicialice el contenedor.
+- Requiere esfuerzo configurar la plataforma.
+
+La arquitectura de ShinyProxy se puede observar en el siguiente diagrama:
+
+&lt;img src="ShinyProxy.png" width="60%" style="display: block; margin: auto;" /&gt;
+
+---
+
+# Requerimiento
+
+  1. Acceso servidor con clave SSH
+  1. Necesidad de modificar archivos .conf (subida de archivos)
+  1. Apoyo, en configuación del servidor? en docker?
+
+---
+# Plazos?
+
+
+---
+## ¿Como elaborar una Shiny App?
+### Herramientas básicas:
++ Github
++ Trabajar con módulos
++ Realizar testeos
+
+### Definiciones generales y Elaborar estrategia
+#### Definición usuarios ¿Que tipos de usuarios se tiene?
+¿Cuantos usuarios son?
++ 10, 20, 30 ?
+
+¿Cuantos tipos de usuarios son?
++ Usuario INE, entra valida una tabla y se va? le interesará validar muchas tablas?
++ Usuario externo?.
+
+---
+
+# Discusión estructura App
+
+1. **.black[UI]**
+    1. **Inputs Usuario**
+        1. Parametros DC: a) UPM, b) Estrato, c) FE, d) Dataset
+        1. Desagregación (dominios): Variables de cruce
+        1. Tipo de cálculo: Medias, Totales, Totales_continuas, Proporciones
+        1. Variable o variables objetivo: "PET" "Ingreso Hogares" "Victimización"
+              + ¿ Puede elegir mas de una variable ?  para generar mas de una tabla? o una tabla con muchas variables?
+        1. **Subopoblaciones?** (¿Como la ENE calcula in dindicador con paquete "calidad")
+    1. **Outputs**
+        1. Visualización tablas
+        1. **¿Visualización evaluación calidad tabla en relación al estandar?**
+        1. Exportación (bases y tabulados).
+        1. **Tipo de tablas?**
+            - Tabulados html
+            - Tabulados
+            - Tablas (estilo dataframe) (definir estilos de tabulados)
+
+---
+## Tabulado HTML Calidad
+#### ¿Es definitivo? o ¿el usuario deberá generar su propio tabulado y luego comparar con este?
+
+&lt;img src="tabulado_calidad.png" width="60%" style="display: block; margin: auto;" /&gt;
+
+### Tabulado tipo ENUSC
+
+### Tabulado tipo ENE
+
+---
+
+# Discusión estructura App
+
+1. **.black[Server]**
+    1. Recepción inputs
+        1. Recibir parametros
+        1. Recibir desagergación
+        1. Recibir Tipo de cálculo
+        1. Variable o variables objetivo
+    1. Declaración diseño complejo
+    1. Aplicación paquete "Calidad"
+    1. **¿Iteración sobre otras posibles variables?**
+    1. Generación de tabulados
+    1. **Generación de evaluación de tabulados?**
+    1. **Generación de output descargable?**
+
+---
+class: center, middle
+
+# GRACIAS!
+
+---
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
