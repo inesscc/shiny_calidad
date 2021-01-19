@@ -1,0 +1,55 @@
+
+
+1- Presentación iniciativa
+Estado actual, objetivos y hacia donde vamos
+
+
+2- Porque shiny
+
+2.1 Soportes
+Shiny server (open source)
+Pro / contras
+r conection
+Pro / contras
+ShinyProxy
+
+3- Estructura App
+
+3.1 inputs del usuario
+- base
+- variables DC 
+- dominio o (desagregación)
+
+Opcional pero relevante:
+- generación de dummis para sub poblaciones, estilo ENE que posee subpoblaciones muy específicas(
+
+
+3.2 procesos
+3.2.1 como funciona el paquete
+Principales funciones
+
+3.2.2 Principales funciones de la app Shiny
+
+
+3.3 outputs
+- tabulados html
+- tabulados
+- tablas (esti{o dataframe) (definir estilos de tabulados)
+
+visualizador que determine el NIVEL de calidad del tabulado
+ 
+5- Plazos
+
+6- Requerimientos
+
+
+
+
+
+
+
+
+
+
+
+
