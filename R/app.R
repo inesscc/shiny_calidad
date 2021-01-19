@@ -85,7 +85,7 @@ lista_categorias_t = function(var, total = T){
 }
 
 
-setwd("/home/ricardo/Documents/INE/Mesa de calidad")
+#setwd("/home/ricardo/Documents/INE/Mesa de calidad")
 #############################################################################################################
 
 #############################################################################################################
@@ -96,11 +96,11 @@ setwd("/home/ricardo/Documents/INE/Mesa de calidad")
 
 #saveRDS(bkish,"/home/ricardo/Documents/INE/Mesa de calidad/Generación_tabulados_2018/bkish.rds")
 
- base <- readRDS("/home/ricardo/Documents/INE/Mesa de calidad/Generación_tabulados_2018/bkish.rds")
+#base <- readRDS("/home/ricardo/Documents/INE/Mesa de calidad/Generación_tabulados_2018/bkish.rds")
 
-names(base)
+#names(base)
 
-names(base)
+#names(base)
 vect_var_int = c("Es necesario cargar base de datos")
 
 # Define UI for application that draws a histogram
@@ -147,7 +147,7 @@ server <- function(input, output) {
     
     
     data_input <- reactive({
-        readRDS(input$file$datapath)
+        readRDS(input$file$datapath) # ¿datapath es un atributo de file?
     })
     
     
