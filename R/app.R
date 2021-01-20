@@ -1,3 +1,18 @@
+### pendiente 
+# 1 Cargar en el computador, o descargar pagina INE (desplegue lista) (externos) Klaus
+# 2 subpob (si o si) Ricardo (1 semana)
+
+# 3 posibilidad mas un calculo por variable Ricardo (2 semana)
+# 3.1 mas variables?    
+
+# 4 Render tabla y evaluación calidad 
+
+# 5 botón de descarga Excel, Csv o Rdata. tabla, PDF Klaus (1 semana)
+
+# 6 Pestaña elaborar propio estandar y comparar.
+
+#### Abril fines 
+
 library(calidad)
 library(shiny)
 library(haven)
@@ -9,7 +24,10 @@ library(readxl)
 library(XLConnect)
 library(survey)
 library(shinyWidgets)
+library(rlang)
+library(kableExtra)
 
+rm(list = ls())
 
 # UI ----
 ui <- fluidPage(
@@ -47,7 +65,7 @@ ui <- fluidPage(
       uiOutput("tituloTAB"),
       
       ### render tabulado
-      uiOutput("tabulado"),
+      htmlOutput("tabulado"),
       uiOutput("PRUEBAS")
         
     )
@@ -56,11 +74,19 @@ ui <- fluidPage(
 
 # SERVER ----
 server <- function(input, output) {
-  options(shiny.maxRequestSize=70*1024^2)
+  options(shiny.maxRequestSize=1000*1024^2)
     
   ### abrimos input de datos
     data_input <- reactive({
+      
+      if(grepl(".sav", input$file$datapath)){
+        
+        haven::read_sav(input$file$datapath)
+        
+      } else if(grepl(".rds", input$file$datapath)){
+    
         readRDS(input$file$datapath)
+      } # sas, dta, csv, feather, xlsx,
     })
     
   ### Extraemos nombres de variables input datos
@@ -76,7 +102,8 @@ server <- function(input, output) {
               tagList(## render selección variables DC
          #   varSelectInput("varINTERES", label = h3("Seleccione las variables de interés"),variables_int() , selected = 1, multiple = T),
             selectInput("varINTERES", label = h3("Seleccione las variables de interés"),choices = variables_int(), selected = "VP_DC", multiple = T),
-            selectInput("varCRUCE", label = h3("Variables de cruce (una o mas)"), choices = variables_int(), selected = 2, multiple = T)
+           radioButtons("tipoCALCULO", "¿Que tipo de cálculo deseas realizar?",choices = list("Media","Proporción","Suma variable Continua","Conteo casos"),),
+           selectInput("varCRUCE", label = h3("Variables de cruce (una o mas)"), choices = variables_int(), selected = 2, multiple = T)
     )})
     
     ### Render selección 2 DC----
@@ -109,51 +136,99 @@ server <- function(input, output) {
     ### TABULADO generación ----
     
     tabuladoOK =  eventReactive(input$actionTAB,{
+      
          ## base datos
-         base_is = isolate({data_input()})
+         base_is =  data_input()
          ## lista de variables de interes
-         v_interes = isolate({input$varINTERES})
+         v_interes =  input$varINTERES
          ## lista de variables a cruzar
-         v_cruces = isolate({input$varCRUCE})
+         v_cruces = input$varCRUCE 
          # variable de factor de expansión
-         v_fexp1 = isolate({input$varFACT1})
-         # variable de factor de expansión 2
-         v_fexp2 = isolate({input$varFACT2})
+         v_fexp1 = input$varFACT1#
          # variable de id de conglomerado
-         v_conglom = isolate({input$varCONGLOM})
+         v_conglom = input$varCONGLOM 
          # variable de estratos
-         v_estratos = isolate({input$varESTRATOS}) 
+         v_estratos = input$varESTRATOS 
          
-       #  tabuladoOK  = list(v_interes, v_cruces, v_fexp1, v_fexp2, v_conglom, v_estratos)
          
-         f_conglom = as.formula(paste0("~",v_conglom))
-         f_fexp1 = as.formula(paste0("~",v_fexp1))
-         f_estratos = as.formula(paste0("~",v_estratos))
-    
-         #base_is[[v_interes]] = as.numeric(base_is[[v_interes]])
-    
-         dc <- svydesign(ids = f_conglom, strata = f_estratos,
-                              data = base_is, weights = f_fexp1)
+         #f_conglom = as.formula(paste0("~",v_conglom))
+         #f_fexp1 = as.formula(paste0("~",v_fexp1))
+         #f_estratos = as.formula(paste0("~",v_estratos))
          
-         options(survey.lonely.psu = "certainty" )
+       #  list(v_conglom, v_estratos,v_fexp1, v_interes)
+      
+        base_is[[v_interes]] = as.numeric(base_is[[v_interes]])
+        base_is$unit =  as.numeric(base_is[[v_conglom]])
+        base_is$varstrat =  as.numeric(base_is[[v_estratos]])
+        base_is$fe =  as.numeric(base_is[[v_fexp1]])
+       
+        
+      # base_is$unit =  base_is[[v_conglom]]
+      # base_is$varstrat =  base_is[[v_estratos]]
+      # base_is$fe =  base_is[[v_fexp1]]
+        
+      #  list(base_is$unit,  base_is$varstrat,  base_is$fe,  base_is[[v_interes]])
          
-         # class(base_is[[v_interes]])
-         # eval(parse(text = v_interes))
-          v_interes <- rlang::parse_expr(v_interes) 
+       dc <- svydesign(ids = ~unit, strata = ~varstrat,
+                       data =  base_is, weights = ~fe)
+       
+       options(survey.lonely.psu = "certainty")
+    #   dc$call 
+     
+         #### seleccionando la función a utilizar
          
-         calidad::crear_insumos_prop(var = v_interes , disenio = dc)
+         #"Media","Proporción","Suma variable Continua","Conteo casos"
          
-        # v_interes
+      if(input$tipoCALCULO %in% "Media") {
+      #  message = paste0("media")
+        insumos = calidad::crear_insumos_media(var = !!parse_expr(enexpr(v_interes)), disenio = dc)
+        evaluados =   calidad::evaluar_calidad_media(insumos)
+        
+      }else if(input$tipoCALCULO %in% "Proporción"){
+       # message = paste0("Proporción")
+        insumos = calidad::crear_insumos_prop(var = !!parse_expr(enexpr(v_interes)), disenio = dc)
+        evaluados =   calidad::evaluar_calidad_prop(insumos)
+        
+      }else if(input$tipoCALCULO %in% "Suma variable Continua"){
+        #message = paste0("Suma variable Continua")
+        insumos = calidad::crear_insumos_tot_con(var = !!parse_expr(enexpr(v_interes)), disenio = dc)
+        evaluados =   calidad::evaluar_calidad_tot_con(insumos)
+        
+      }else if(input$tipoCALCULO %in% "Conteo casos"){
+        #message = paste0("Conteo casos")
+        insumos = calidad::crear_insumos_tot(var = !!parse_expr(enexpr(v_interes)), disenio = dc)
+        evaluados = calidad::evaluar_calidad_tot(insumos)
+        
+      }
+       
+         
+         ## generamos cálculo 
+         
+   #     ins_prop = calidad::crear_insumos_prop(var = !!parse_expr(enexpr(v_interes)), disenio = dc)
+    #    cal_prop =   calidad::evaluar_calidad_prop(ins_prop)
+     
+         #message    
+
     })
   
     
     
-   # output$tabulado  <- renderTable({tabuladoOK()})
+   output$tabulado  <- renderText({
+   
+   #tabuladoOK()
+   
+  calidad::tabla_html(tabuladoOK())
+
     
+    })
+ 
+
     
     
      output$textcat <- renderPrint({
     
+      # tabuladoOK()
+       
        paste(tabuladoOK())
      ### útil para  varios tabulados
      # num = length(input$varINTERES)
