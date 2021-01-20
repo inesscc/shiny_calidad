@@ -138,11 +138,14 @@ server <- function(input, output) {
          
          # class(base_is[[v_interes]])
          # eval(parse(text = v_interes))
-          v_interes <- rlang::parse_expr(v_interes) 
+          #v_interes <- rlang::parse_expr(v_interes) 
          
-         calidad::crear_insumos_prop(var = v_interes , disenio = dc)
-         
-        # v_interes
+         calidad::crear_insumos_prop(var = VP_DC, disenio = dc)
+         #calidad::crear_insumos_prop(var = !!rlang::parse_expr(rlang::enexpr(v_interes)), disenio = dc)
+         #crear_insumos_prop(var = !!parse_expr(enexpr(variable)), subpop = fdt, disenio =  dc_ene)
+         #f_conglom
+         #dc$call
+         f_conglom
     })
   
     
@@ -154,6 +157,8 @@ server <- function(input, output) {
      output$textcat <- renderPrint({
     
        paste(tabuladoOK())
+       
+       
      ### útil para  varios tabulados
      # num = length(input$varINTERES)
       
