@@ -27,11 +27,10 @@ library(shinyWidgets)
 library(rlang)
 library(kableExtra)
 
-<<<<<<< HEAD
-=======
+
 rm(list = ls())
 
->>>>>>> 1f71defd56dec22ed97629ec68c22e7cd3cfcae0
+
 # UI ----
 ui <- fluidPage(
     tags$style("
@@ -58,7 +57,9 @@ ui <- fluidPage(
            uiOutput("seleccion2"),
           
           ## botón generación tabulado 
-          uiOutput("botonTAB"),
+          uiOutput("botonTAB")
+          
+      
         ),
         
         ## Main PANEL ----
@@ -70,7 +71,7 @@ ui <- fluidPage(
       ### render tabulado
       htmlOutput("tabulado"),
       uiOutput("PRUEBAS")
-        
+
     )
 )
 )
@@ -106,9 +107,9 @@ server <- function(input, output) {
     output$seleccion1 <- renderUI({
               tagList(## render selección variables DC
          #   varSelectInput("varINTERES", label = h3("Seleccione las variables de interés"),variables_int() , selected = 1, multiple = T),
-            selectInput("varINTERES", label = h3("Seleccione las variables de interés"),choices = variables_int(), selected = "VP_DC", multiple = T),
+            selectInput("varINTERES", label = h3("Variable de interés"),choices = variables_int(), selected = "VP_DC", multiple = T),
            radioButtons("tipoCALCULO", "¿Que tipo de cálculo deseas realizar?",choices = list("Media","Proporción","Suma variable Continua","Conteo casos"),),
-           selectInput("varCRUCE", label = h3("Variables de cruce (una o mas)"), choices = variables_int(), selected = 2, multiple = T)
+           selectInput("varCRUCE", label = h3("Desagregación"), choices = variables_int(), selected = 2, multiple = T)
     )})
     
     ### Render selección 2 DC----
@@ -116,15 +117,18 @@ server <- function(input, output) {
         req(input$varINTERES)
       tagList(
     selectInput("varFACT1", label = h3("Variable para factor expansión"), choices = variables_int(), selected = "Fact_pers", multiple = F),
-    selectInput("varCONGLOM", label = h3("Variable id. Conglomerado"), choices = variables_int(), selected = "Conglomerado", multiple = F),
-    selectInput("varESTRATOS",label = h3("Variable de estratos"), choices = variables_int(), selected = "VarStrat", multiple = F)
+    selectInput("varCONGLOM", label = h3("Variable para conglomerados"), choices = variables_int(), selected = "Conglomerado", multiple = F),
+    selectInput("varESTRATOS",label = h3("Variable para estratos"), choices = variables_int(), selected = "VarStrat", multiple = F), 
+    downloadButton("tabla", label = "Descargar"),
+    actionButton("actionTAB", label = "Generar tabulado")
+    
     )
     })
     
     ## Botón generación tabuldado ----
-    output$botonTAB <- renderUI({
-        actionButton("actionTAB", label = "Generar tabulado")
-        })
+    #output$botonTAB <- renderUI({
+    #    actionButton("actionTAB", label = "Generar tabulado")
+    #    })
     
   
     ### RENDER IN MAIN PANEL -----
@@ -229,7 +233,15 @@ server <- function(input, output) {
     
     })
  
-
+   # Bloque para descargar la tabla generada
+   output$tabla <- downloadHandler(
+     filename = function() {
+       paste("data-", Sys.Date(), ".csv", sep="")
+     },
+     content = function(file) {
+       write.csv(tabuladoOK(), file)
+     }
+   )
     
     
      output$textcat <- renderPrint({
