@@ -40,15 +40,19 @@ ui <- fluidPage(
     zoom: 80%; /* Webkit browsers */
 }
               "),
+    
+    tags$img(src="logo_ine.png", width = 150, align="right"),
+    
     # Application title
-    titlePanel("Evaluación calidad del dato en encuestas de hogar"),
-
+    titlePanel(title = "Evaluación calidad del dato en encuestas de hogar"),
+    
+    #titlePanel("Evaluación calidad del dato en encuestas de hogar"),
     # Sidebar with a slider input for number of bins 
         sidebarLayout(
             sidebarPanel(
             
           ## input de archivo -----
-           fileInput(inputId = "file", label = h3("File input") ),
+           fileInput(inputId = "file", label = h3("Carga una base de datos") ),
                      
           ## render selección de variables de interes, y de cruce
            uiOutput("seleccion1"),
@@ -70,6 +74,7 @@ ui <- fluidPage(
       
       ### render tabulado
       htmlOutput("tabulado"),
+      tableOutput("tabulado2"),
       uiOutput("PRUEBAS")
 
     )
@@ -197,7 +202,7 @@ server <- function(input, output) {
       }else if(input$tipoCALCULO %in% "Proporción"){
        # message = paste0("Proporción")
         insumos = calidad::crear_insumos_prop(var = !!parse_expr(enexpr(v_interes)), disenio = dc)
-        evaluados =   calidad::evaluar_calidad_prop(insumos)
+        evaluados =   calidad::evaluar_calidad_prop(insumos, publicar = T)
         
       }else if(input$tipoCALCULO %in% "Suma variable Continua"){
         #message = paste0("Suma variable Continua")
@@ -226,13 +231,18 @@ server <- function(input, output) {
     
    output$tabulado  <- renderText({
    
-   #tabuladoOK()
-   
-  calidad::tabla_html(tabuladoOK())
-
+   calidad::tabla_html(tabuladoOK())
     
     })
  
+   
+   output$tabulado2  <- renderTable({
+     
+     tabuladoOK()
+     
+     
+   })
+   
    # Bloque para descargar la tabla generada
    output$tabla <- downloadHandler(
      filename = function() {
