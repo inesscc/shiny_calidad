@@ -26,7 +26,7 @@ library(survey)
 library(shinyWidgets)
 library(rlang)
 library(kableExtra)
-
+library(readr)
 
 rm(list = ls())
 
@@ -40,20 +40,31 @@ ui <- fluidPage(
     zoom: 80%; /* Webkit browsers */
 }
               "),
-    
+    # Agregar el logo del INE    
     tags$img(src="logo_ine.png", width = 150, align="right"),
     
-    # Application title
-    titlePanel(title = "Evaluación calidad del dato en encuestas de hogar"),
+    # Título de la aplicación
+    titlePanel(title = "Evaluación de calidad de estimaciones en encuestas de hogares"),
     
-    #titlePanel("Evaluación calidad del dato en encuestas de hogar"),
     # Sidebar with a slider input for number of bins 
         sidebarLayout(
             sidebarPanel(
             
-          ## input de archivo -----
-           fileInput(inputId = "file", label = h3("Carga una base de datos") ),
-                     
+          ## input de archivo local -----
+           fileInput(inputId = "file", label = h4("Carga una base de datos desde tu computador") ),
+          
+          ## input archivo página del INE
+          radioButtons("base_web_ine", h4("Descarga una base de datos desde la web del INE"), 
+                       inline = T,
+                       c("ENE" = "ene", 
+                         "ENUT" = "enut",
+                         "ENUSC" = "enusc",
+                         "ESI" = "esi")),
+          
+          actionButton("base_ine", label = "Descargar base"),
+          
+
+
           ## render selección de variables de interes, y de cruce
            uiOutput("seleccion1"),
           
@@ -75,8 +86,10 @@ ui <- fluidPage(
       ### render tabulado
       htmlOutput("tabulado"),
       tableOutput("tabulado2"),
-      uiOutput("PRUEBAS")
-
+      uiOutput("PRUEBAS"),
+      
+      textOutput("dimensiones")
+  
     )
 )
 )
@@ -102,10 +115,14 @@ server <- function(input, output) {
     
   ### Extraemos nombres de variables input datos
     variables_int <- reactive({
-    req(input$file)
-    names(data_input())
-    })
     
+    if (!is.null(input$file)) {
+      names(data_input())    
+    } else if (!is.null(descarga())) {
+      names(descarga())      
+    }
+
+    })
     
     ### RENDER IN SIDE BAR -----
     ### Render selección 1 -----
@@ -145,6 +162,22 @@ server <- function(input, output) {
     
     )
     })
+    
+    
+    ###################################
+    # DATOS WEB INE - COMPUTADOR LOCAL
+    ##################################
+    datos <- reactiveVal(NULL)
+    
+     observeEvent(input$base_ine, {
+       datos(data_input())
+     })
+    
+    # observeEvent(descarga(), {
+    #   datos(descarga())
+    # })
+    
+    
     
 
     ### TABULADO generación ----
@@ -228,6 +261,23 @@ server <- function(input, output) {
     })
   
     
+    ##############################
+    # DESCARGA DE DATOS PÁGINA INE
+    ##############################
+    descarga =  eventReactive(input$base_ine, {
+      #Descargar la base de datos en archivo temporal
+      temp <- tempfile()
+      file <- "https://www.ine.cl/docs/default-source/ocupacion-y-desocupacion/bbdd/2020/formato-csv/ene-2020-10-son.csv?sfvrsn=35fc8a67_4&download=true"
+      download.file(file, temp)
+      
+      datos <-  read_delim(file, delim = ';')
+      #dim(datos)
+      datos
+    })
+    
+    
+  
+    
     
    output$tabulado  <- renderText({
    
@@ -235,15 +285,29 @@ server <- function(input, output) {
     
     })
  
-   
+   ###########################
+   # SECCIÓN PARA PROBAR COSAS
+   ###########################
+   # Sección de prueba
    output$tabulado2  <- renderTable({
      
      tabuladoOK()
      
+    
+   })
+   
+   output$dimensiones  <- renderText({
+     
+     descarga()
+     
+     
      
    })
    
-   # Bloque para descargar la tabla generada
+   ##############################
+    # Descargar la tabla generada
+   ##############################   
+   # 
    output$tabla <- downloadHandler(
      filename = function() {
        paste("data-", Sys.Date(), ".csv", sep="")
