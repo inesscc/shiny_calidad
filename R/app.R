@@ -26,7 +26,7 @@ library(survey)
 library(shinyWidgets)
 library(rlang)
 library(kableExtra)
-
+library(shinycssloaders)
 
 rm(list = ls())
 
@@ -69,7 +69,7 @@ ui <- fluidPage(
       uiOutput("tituloTAB"),
       verbatimTextOutput("PRUEBAS2"),
       ### render tabulado
-      htmlOutput("tabulado"),
+      htmlOutput("tabulado")%>% withSpinner(color="#0dc5c1"),
       uiOutput("PRUEBAS"),
      
       
