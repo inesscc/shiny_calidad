@@ -73,16 +73,9 @@ ui <- fluidPage(
       uiOutput("tituloTAB"),
       verbatimTextOutput("PRUEBAS2"),
       ### render tabulado
-<<<<<<< HEAD
-      htmlOutput("tabulado"),
-      tableOutput("tabulado2"),
-      uiOutput("PRUEBAS")
-=======
       htmlOutput("tabulado")%>% withSpinner(color="#0dc5c1"),
       uiOutput("PRUEBAS"),
      
-      
->>>>>>> 1b7e3c1d7bed75bae9efcc2cc304d59ccfe92530
 
     )
 )
@@ -200,33 +193,6 @@ server <- function(input, output) {
     #   dc$call 
      
          #### seleccionando la función a utilizar
-<<<<<<< HEAD
-         
-         #"Media","Proporción","Suma variable Continua","Conteo casos"
-         
-
-      if(input$tipoCALCULO %in% "Media") {
-      #  message = paste0("media")
-        insumos = calidad::crear_insumos_media(var = !!parse_expr(enexpr(v_interes)), disenio = dc)
-        evaluados =   calidad::evaluar_calidad_media(insumos)
-        
-      }else if(input$tipoCALCULO %in% "Proporción"){
-       # message = paste0("Proporción")
-        insumos = calidad::crear_insumos_prop(var = !!parse_expr(enexpr(v_interes)), disenio = dc)
-        evaluados =   calidad::evaluar_calidad_prop(insumos, publicar = T)
-        
-      }else if(input$tipoCALCULO %in% "Suma variable Continua"){
-        #message = paste0("Suma variable Continua")
-        insumos = calidad::crear_insumos_tot_con(var = !!parse_expr(enexpr(v_interes)), disenio = dc)
-        evaluados =   calidad::evaluar_calidad_tot_con(insumos)
-        
-      }else if(input$tipoCALCULO %in% "Conteo casos"){
-        #message = paste0("Conteo casos")
-        insumos = calidad::crear_insumos_tot(var = !!parse_expr(enexpr(v_interes)), disenio = dc)
-        evaluados = calidad::evaluar_calidad_tot(insumos)
-        
-      }
-=======
    #   es_null <- function(valor){
    #     if(length(valor) == 0){
    #       
@@ -242,8 +208,7 @@ server <- function(input, output) {
    #       return(valor)
    #     }
    #   }   
->>>>>>> 1b7e3c1d7bed75bae9efcc2cc304d59ccfe92530
-       
+
      #  v_cruce2 = es_null(v_cruce)
        
        
@@ -295,15 +260,11 @@ server <- function(input, output) {
   
    output$tabulado  <- renderText({
    
-<<<<<<< HEAD
-   calidad::tabla_html(tabuladoOK())
-=======
  #  tabuladoOK()
    
  calidad::tabla_html(tabuladoOK())
 
->>>>>>> 1b7e3c1d7bed75bae9efcc2cc304d59ccfe92530
-    
+
     })
  
    
