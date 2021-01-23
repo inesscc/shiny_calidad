@@ -129,7 +129,7 @@ server <- function(input, output) {
     output$seleccion1 <- renderUI({
               tagList(## render selección variables DC
          #   varSelectInput("varINTERES", label = h3("Seleccione las variables de interés"),variables_int() , selected = 1, multiple = T),
-            selectInput("varINTERES", label = h3("Variable de interés"),choices = variables_int(), selected = "VP_DC", multiple = T),
+            selectInput("varINTERES", label = h3("Variable de interés"),choices = variables_int(),  multiple = F),
            radioButtons("tipoCALCULO", "¿Que tipo de cálculo deseas realizar?",choices = list("Media","Proporción","Suma variable Continua","Conteo casos"),),
            selectInput("varCRUCE", label = h3("Desagregación"), choices = variables_int(), selected = NULL, multiple = T),
            selectInput("varSUBPOB", label = h3("Sub Población"), choices = variables_int(), selected = NULL, multiple = T)
@@ -170,13 +170,15 @@ server <- function(input, output) {
     ##################################
     datos <- reactiveVal(NULL)
     
-     observeEvent(input$base_ine, {
-       datos(data_input())
+     observeEvent(input$file, {
+       new <- data_input() 
+       datos(new)
      })
     
-    # observeEvent(descarga(), {
-    #   datos(descarga())
-    # })
+     
+     observeEvent(input$base_ine, {
+       datos(descarga())
+     })
     
     
     
