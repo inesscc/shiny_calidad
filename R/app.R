@@ -28,12 +28,14 @@ library(rlang)
 library(kableExtra)
 library(shinycssloaders)
 library(readr)
+library(shinybusy)
 
 rm(list = ls())
 
 
 # UI ----
 ui <- fluidPage(
+
     tags$style("
               body {
     -moz-transform: scale(0.8, 0.8); /* Moz-browsers */
@@ -55,12 +57,8 @@ ui <- fluidPage(
            fileInput(inputId = "file", label = h4("Carga una base de datos desde tu computador") ),
           
           ## input archivo página del INE
-          radioButtons("base_web_ine", h4("Descarga una base de datos desde la web del INE"), 
-                       inline = T,
-                       c("ENE" = "ene", 
-                         "ENUT" = "enut",
-                         "ENUSC" = "enusc",
-                         "ESI" = "esi")),
+          selectInput("base_web_ine", label = h4("Descarga una base de datos desde la web del INE"),
+                      choices = c("epf personas", "ene (última trimestre)", "enusc", "esi", "enut") ,  multiple = F),
           
           actionButton("base_ine", label = "Descargar base"),
           
@@ -85,7 +83,7 @@ ui <- fluidPage(
       uiOutput("tituloTAB"),
       verbatimTextOutput("PRUEBAS2"),
       ### render tabulado
-      htmlOutput("tabulado")%>% withSpinner(color="#0dc5c1"),
+      htmlOutput("tabulado") %>% withSpinner(color="#0dc5c1"),
       uiOutput("PRUEBAS"),
       textOutput("dimensiones")
   
@@ -95,6 +93,10 @@ ui <- fluidPage(
 
 # SERVER ----
 server <- function(input, output) {
+  
+  
+  
+  
   options(shiny.maxRequestSize=1000*1024^2)
     
   ### abrimos input de datos
@@ -188,7 +190,7 @@ server <- function(input, output) {
     tabuladoOK =  eventReactive(input$actionTAB,{
       
          ## base datos
-         base_is =  data_input()
+         base_is =  datos()
          ## lista de variables de interes
          v_interes =  input$varINTERES
          ## lista de variables a cruzar
@@ -254,8 +256,10 @@ server <- function(input, output) {
    #   }else{
    #   calidad::crear_insumos_prop(var = !!parse_expr(enexpr(v_interes)), dominios = !!enexpr(v_cruce) ,disenio = dc)
    #   }
-     funciones_cal = list(calidad::crear_insumos_media, calidad::crear_insumos_prop, calidad::crear_insumos_tot, calidad::crear_insumos_tot_con)
-     funciones_eval = list(calidad::evaluar_calidad_media, calidad::evaluar_calidad_prop, calidad::evaluar_calidad_tot, calidad::evaluar_calidad_tot_con)
+     funciones_cal = list(calidad::crear_insumos_media, calidad::crear_insumos_prop, 
+                          calidad::crear_insumos_tot_con, calidad::crear_insumos_tot)
+     funciones_eval = list(calidad::evaluar_calidad_media, calidad::evaluar_calidad_prop, 
+                           calidad::evaluar_calidad_tot, calidad::evaluar_calidad_tot_con)
      
    
      if(input$tipoCALCULO %in% "Media") {
@@ -298,16 +302,22 @@ server <- function(input, output) {
     ##############################
     # DESCARGA DE DATOS PÁGINA INE
     ##############################
-    descarga =  eventReactive(input$base_ine, {
+
+     descarga =  eventReactive(input$base_ine, {
+       show_modal_spinner() # show the modal window
       #Descargar la base de datos en archivo temporal
       temp <- tempfile()
       file <- "https://www.ine.cl/docs/default-source/ocupacion-y-desocupacion/bbdd/2020/formato-csv/ene-2020-10-son.csv?sfvrsn=35fc8a67_4&download=true"
       download.file(file, temp)
       
       datos <-  read_delim(file, delim = ';')
+      
+
+      remove_modal_spinner() # remove it when done
+      
       #dim(datos)
       datos
-    })
+    }) 
     
   
   output$tabulado  <- renderText({
@@ -332,7 +342,7 @@ server <- function(input, output) {
    
    output$dimensiones  <- renderText({
      
-     descarga()
+     dim(descarga())
      
      
      
