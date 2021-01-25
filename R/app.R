@@ -1,17 +1,3 @@
-### pendiente 
-# 1 Cargar en el computador, o descargar pagina INE (desplegue lista) (externos) Klaus
-# 2 subpob (si o si) Ricardo (1 semana)
-
-# 3 posibilidad mas un calculo por variable Ricardo (2 semana)
-# 3.1 mas variables?    
-
-# 4 Render tabla y evaluación calidad 
-
-# 5 botón de descarga Excel, Csv o Rdata. tabla, PDF Klaus (1 semana)
-
-# 6 Pestaña elaborar propio estandar y comparar.
-
-#### Abril fines 
 
 library(calidad)
 library(shiny)
@@ -29,13 +15,20 @@ library(kableExtra)
 library(shinycssloaders)
 library(readr)
 library(shinybusy)
+library(shinyalert)
+library(writexl)
 
 rm(list = ls())
 
-
 # UI ----
 ui <- fluidPage(
-
+  useShinyalert(),
+  
+  
+  includeCSS("styles.css"),
+  
+  
+    
     tags$style("
               body {
     -moz-transform: scale(0.8, 0.8); /* Moz-browsers */
@@ -52,13 +45,17 @@ ui <- fluidPage(
     # Sidebar with a slider input for number of bins 
         sidebarLayout(
             sidebarPanel(
+                ## input de archivo local -----
+                fileInput(inputId = "file", label = h4("Carga una base de datos desde tu computador")),
             
-          ## input de archivo local -----
-           fileInput(inputId = "file", label = h4("Carga una base de datos desde tu computador") ),
-          
           ## input archivo página del INE
           selectInput("base_web_ine", label = h4("Descarga una base de datos desde la web del INE"),
-                      choices = c("epf personas", "ene (última trimestre)", "enusc", "esi", "enut") ,  multiple = F),
+                      choices = c("epf personas" = "epf", 
+                                  "ene (última trimestre)" = "ene",
+                                  "enusc", 
+                                  "esi",
+                                  "enut"),  
+                      multiple = F),
           
           actionButton("base_ine", label = "Descargar base"),
           
@@ -84,8 +81,7 @@ ui <- fluidPage(
       verbatimTextOutput("PRUEBAS2"),
       ### render tabulado
       htmlOutput("tabulado") %>% withSpinner(color="#0dc5c1"),
-      uiOutput("PRUEBAS"),
-      textOutput("dimensiones")
+      uiOutput("PRUEBAS")
   
     )
 )
@@ -94,7 +90,12 @@ ui <- fluidPage(
 # SERVER ----
 server <- function(input, output) {
   
-  
+  # Logo inicial
+  observe( {
+    #Muestra el cartel cuando inicia la APP
+    shinyalert(imageUrl = "logo_ine.png",imageWidth = "200", imageHeight = "200",
+               closeOnClickOutside = T, showConfirmButton = F)
+  })
   
   
   options(shiny.maxRequestSize=1000*1024^2)
@@ -131,19 +132,19 @@ server <- function(input, output) {
     output$seleccion1 <- renderUI({
               tagList(## render selección variables DC
          #   varSelectInput("varINTERES", label = h3("Seleccione las variables de interés"),variables_int() , selected = 1, multiple = T),
-            selectInput("varINTERES", label = h3("Variable de interés"),choices = variables_int(),  multiple = F),
-           radioButtons("tipoCALCULO", "¿Que tipo de cálculo deseas realizar?",choices = list("Media","Proporción","Suma variable Continua","Conteo casos"),),
-           selectInput("varCRUCE", label = h3("Desagregación"), choices = variables_int(), selected = NULL, multiple = T),
-           selectInput("varSUBPOB", label = h3("Sub Población"), choices = variables_int(), selected = NULL, multiple = T)
+            selectInput("varINTERES", label = h4("Variable de interés"),choices = variables_int(),  multiple = F),
+           radioButtons("tipoCALCULO", "¿Qué tipo de cálculo deseas realizar?",choices = list("Media","Proporción","Suma variable Continua","Conteo casos"), inline = F ),
+           selectInput("varCRUCE", label = h4("Desagregación"), choices = variables_int(), selected = NULL, multiple = T),
+           selectInput("varSUBPOB", label = h4("Sub Población"), choices = variables_int(), selected = NULL, multiple = T)
     )})
     
     ### Render selección 2 DC----
     output$seleccion2 <- renderUI({
         req(input$varINTERES)
       tagList(
-    selectInput("varFACT1", label = h3("Variable para factor expansión"), choices = variables_int(), selected = "Fact_pers", multiple = F),
-    selectInput("varCONGLOM", label = h3("Variable para conglomerados"), choices = variables_int(), selected = "Conglomerado", multiple = F),
-    selectInput("varESTRATOS",label = h3("Variable para estratos"), choices = variables_int(), selected = "VarStrat", multiple = F), 
+    selectInput("varFACT1", label = h4("Variable para factor expansión"), choices = variables_int(), selected = "Fact_pers", multiple = F),
+    selectInput("varCONGLOM", label = h4("Variable para conglomerados"), choices = variables_int(), selected = "Conglomerado", multiple = F),
+    selectInput("varESTRATOS",label = h4("Variable para estratos"), choices = variables_int(), selected = "VarStrat", multiple = F), 
     downloadButton("tabla", label = "Descargar"),
     actionButton("actionTAB", label = "Generar tabulado")
     
@@ -259,7 +260,7 @@ server <- function(input, output) {
      funciones_cal = list(calidad::crear_insumos_media, calidad::crear_insumos_prop, 
                           calidad::crear_insumos_tot_con, calidad::crear_insumos_tot)
      funciones_eval = list(calidad::evaluar_calidad_media, calidad::evaluar_calidad_prop, 
-                           calidad::evaluar_calidad_tot, calidad::evaluar_calidad_tot_con)
+                           calidad::evaluar_calidad_tot_con, calidad::evaluar_calidad_tot)
      
    
      if(input$tipoCALCULO %in% "Media") {
@@ -307,12 +308,33 @@ server <- function(input, output) {
        show_modal_spinner() # show the modal window
       #Descargar la base de datos en archivo temporal
       temp <- tempfile()
-      file <- "https://www.ine.cl/docs/default-source/ocupacion-y-desocupacion/bbdd/2020/formato-csv/ene-2020-10-son.csv?sfvrsn=35fc8a67_4&download=true"
-      download.file(file, temp)
       
-      datos <-  read_delim(file, delim = ';')
+      # Seleccionar la ruta de cada base de datos
+       if (input$base_web_ine == "epf") {
+         file <- "https://www.ine.cl/docs/default-source/encuesta-de-presupuestos-familiares/bbdd/viii-epf---(junio-2016---julio-2017)/base-personas-viii-epf-(formato-csv).csv?sfvrsn=8cdf62d7_2&download=true"
+         datos <-  read_delim(file, delim = ';')
+         
+         
+       } else if (input$base_web_ine == "ene") {
+         file <- "https://www.ine.cl/docs/default-source/ocupacion-y-desocupacion/bbdd/2020/formato-csv/ene-2020-10-son.csv?sfvrsn=35fc8a67_4&download=true"
+         datos <-  read_delim(file, delim = ';')
+         
+       } else if (input$base_web_ine == "enusc") {
+        file <- "https://www.ine.cl/docs/default-source/seguridad-ciudadana/bbdd/2019/base-de-datos---xvi-enusc-2019-(csv).csv?sfvrsn=d3465758_2&download=true"
+        datos <-  read_delim(file, delim = ';')
+        
+       } else if (input$base_web_ine == "esi") {
+         file <- "https://www.ine.cl/docs/default-source/encuesta-suplementaria-de-ingresos/bbdd/csv_esi/2019/esi-2019---personas.csv?sfvrsn=9eb52870_4&download=true"
+         datos <-  read_delim(file, delim = ';')
+         
+       } else if (input$base_web_ine == "enut") {
+         file <- "https://www.ine.cl/docs/default-source/uso-del-tiempo-tiempo-libre/bbdd/documentos/base_datos_enut_csv.zip?sfvrsn=b399edf0_5"
+         download.file(file, temp)
+         unzip(temp)
+         datos <-  read_delim("BASE_USUARIO ENUT 2015.csv", delim = ';')
+         
+       }
       
-
       remove_modal_spinner() # remove it when done
       
       #dim(datos)
@@ -329,24 +351,7 @@ server <- function(input, output) {
 
     })
  
-   ###########################
-   # SECCIÓN PARA PROBAR COSAS
-   ###########################
-   # Sección de prueba
-   output$tabulado2  <- renderTable({
-     
-     tabuladoOK()
-     
-    
-   })
-   
-   output$dimensiones  <- renderText({
-     
-     dim(descarga())
-     
-     
-     
-   })
+
    
    ##############################
     # Descargar la tabla generada
@@ -354,10 +359,11 @@ server <- function(input, output) {
    # 
    output$tabla <- downloadHandler(
      filename = function() {
-       paste("data-", Sys.Date(), ".csv", sep="")
+       paste("data-", Sys.Date(), ".xlsx", sep="")
      },
      content = function(file) {
-       write.csv(tabuladoOK(), file)
+       write_xlsx(tabuladoOK(), file)
+       #write.csv(tabuladoOK(), file)
      }
    )
     
