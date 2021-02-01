@@ -17,12 +17,16 @@ library(readr)
 library(shinybusy)
 library(shinyalert)
 library(writexl)
+library(shinyjs)
 
+# Cargar funciones
+source("download_data.R")
 
 testeo = F
 
 # UI ----
 ui <- fluidPage(
+  useShinyjs(),
   useShinyalert(),
   includeCSS("styles.css"),
   
@@ -127,7 +131,6 @@ server <- function(input, output) {
   ### Extraemos nombres de variables input datos
   variables_int <- reactive({
     
-    
     if (!is.null(input$file)) {
       names(data_input())    
     } else if (!is.null(descarga())) {
@@ -136,7 +139,11 @@ server <- function(input, output) {
     
   })
   
-  ### RENDER IN SIDE BAR -----
+  ########################
+  # ### RENDER IN SIDE BAR  
+  ########################
+  
+  
   ### Render selección 1 -----
   output$seleccion1 <- renderUI({
     tagList(## render selección variables DC
@@ -154,9 +161,8 @@ server <- function(input, output) {
       selectInput("varFACT1", label = h4("Variable para factor expansión"), choices = variables_int(), selected = "Fact_pers", multiple = F),
       selectInput("varCONGLOM", label = h4("Variable para conglomerados"), choices = variables_int(), selected = "Conglomerado", multiple = F),
       selectInput("varESTRATOS",label = h4("Variable para estratos"), choices = variables_int(), selected = "VarStrat", multiple = F), 
-      downloadButton("tabla", label = "Descargar"),
+      disabled(downloadButton("tabla", label = "Descargar")),
       actionButton("actionTAB", label = "Generar tabulado")
-      
     )
   })
   
@@ -280,66 +286,50 @@ server <- function(input, output) {
     evaluados
     
   })
-  
+ 
+   ### render Tabulado ####
+  output$tabulado  <- renderText({
+    calidad::tabla_html(tabuladoOK())
+  })
   
   ##############################
   # DESCARGA DE DATOS PÁGINA INE
   ##############################
   
   descarga =  eventReactive(input$base_ine, {
+    
+    # Modal para descarga
     show_modal_spinner() # show the modal window
+    
     #Descargar la base de datos en archivo temporal
     temp <- tempfile()
+    datos <- download_data(input$base_web_ine)
     
-    # Seleccionar la ruta de cada base de datos
-    if (input$base_web_ine == "epf") {
-      file <- "https://www.ine.cl/docs/default-source/encuesta-de-presupuestos-familiares/bbdd/viii-epf---(junio-2016---julio-2017)/base-personas-viii-epf-(formato-csv).csv?sfvrsn=8cdf62d7_2&download=true"
-      datos <-  read_delim(file, delim = ';')
-      
-    } else if (input$base_web_ine == "ene") {
-      file <- "https://www.ine.cl/docs/default-source/ocupacion-y-desocupacion/bbdd/2020/formato-csv/ene-2020-10-son.csv?sfvrsn=35fc8a67_4&download=true"
-      datos <-  read_delim(file, delim = ';')
-      
-    } else if (input$base_web_ine == "enusc") {
-      file <- "https://www.ine.cl/docs/default-source/seguridad-ciudadana/bbdd/2019/base-de-datos---xvi-enusc-2019-(csv).csv?sfvrsn=d3465758_2&download=true"
-      datos <-  read_delim(file, delim = ';')
-      
-    } else if (input$base_web_ine == "esi") {
-      file <- "https://www.ine.cl/docs/default-source/encuesta-suplementaria-de-ingresos/bbdd/csv_esi/2019/esi-2019---personas.csv?sfvrsn=9eb52870_4&download=true"
-      datos <-  read_delim(file, delim = ';')
-      
-    } else if (input$base_web_ine == "enut") {
-      file <- "https://www.ine.cl/docs/default-source/uso-del-tiempo-tiempo-libre/bbdd/documentos/base_datos_enut_csv.zip?sfvrsn=b399edf0_5"
-      download.file(file, temp)
-      unzip(temp)
-      datos <-  read_delim("BASE_USUARIO ENUT 2015.csv", delim = ';')
-      
-    }
-    
+    # Modal para descarga
     remove_modal_spinner() # remove it when done
     
-    #dim(datos)
     datos
   }) 
   
-  ### render Tabulado ####
-  output$tabulado  <- renderText({
-    calidad::tabla_html(tabuladoOK())
-  })
+
   
-  
-  
-  ###################################
-  # Descargar la tabla generada ####
-  ###################################   
-  # 
+
+  ###############################
+  # DESCARGA DE TABULADO GENERADO#
+  ###############################  
+  # Habilitar botón de descarga
+  observeEvent(tabuladoOK(), {
+       enable("tabla")
+     })
+
+
   output$tabla <- downloadHandler(
+
     filename = function() {
       paste("data-", Sys.Date(), ".xlsx", sep="")
     },
     content = function(file) {
       write_xlsx(tabuladoOK(), file)
-      #write.csv(tabuladoOK(), file)
     }
   )
   
