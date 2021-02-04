@@ -19,8 +19,16 @@ library(shinyalert)
 library(writexl)
 library(shinyjs)
 
-# Cargar funciones
+
+# Cargar funciones ####
 source("download_data.R")
+source("create_tabulado.R")
+#source("utils.R")
+
+# posibilidad nombres de variables DC"
+fact_exp = c("Fact_pers","Fact_Pers","fe","fact_cal", "fact_pers","fact_pers","fe","fact_cal", "fact_cal_esi","FACT_PERS","FACT_PERS","FE","FACT_CAL","FACT_CAL_ESI")
+conglomerados = c("Conglomerado", "id_directorio","varunit", "conglomerado","id_directorio","varunit","CONGLOMERADO","ID_DIRECTORIO","VARUNIT")
+estratos = c("VarStrat", "estrato", "varstrat","varstrat", "estrato",  "varstrat","VARSTRAT", "ESTRATO",  "VARSTRAT")
 
 testeo = F
 
@@ -111,9 +119,9 @@ server <- function(input, output) {
                closeOnClickOutside = T, showConfirmButton = F)
   })
   
+  ### + I N P U T S + ####
   
-  
-  ### abrimos input de datos
+  ### CARGA: base local ####
   data_input <- reactive({
     
     
@@ -128,174 +136,8 @@ server <- function(input, output) {
     
   })
   
-  ### Extraemos nombres de variables input datos
-  variables_int <- reactive({
-    
-    if (!is.null(input$file)) {
-      names(data_input())    
-    } else if (!is.null(descarga())) {
-      names(descarga())      
-    }
-    
-  })
   
-  ########################
-  # ### RENDER IN SIDE BAR  
-  ########################
-  
-  
-  ### Render selección 1 -----
-  output$seleccion1 <- renderUI({
-    tagList(## render selección variables DC
-      #   varSelectInput("varINTERES", label = h3("Seleccione las variables de interés"),variables_int() , selected = 1, multiple = T),
-      selectInput("varINTERES", label = h4("Variable de interés"),choices = variables_int(),  multiple = F),
-      radioButtons("tipoCALCULO", "¿Qué tipo de cálculo deseas realizar?",choices = list("Media","Proporción","Suma variable Continua","Conteo casos"), inline = F ),
-      selectInput("varCRUCE", label = h4("Desagregación"), choices = variables_int(), selected = NULL, multiple = T),
-      selectInput("varSUBPOB", label = h4("Sub Población"), choices = variables_int(), selected = NULL, multiple = T)
-    )})
-  
-  ### Render selección 2 DC----
-  output$seleccion2 <- renderUI({
-    req(input$varINTERES)
-    tagList(
-      selectInput("varFACT1", label = h4("Variable para factor expansión"), choices = variables_int(), selected = "Fact_pers", multiple = F),
-      selectInput("varCONGLOM", label = h4("Variable para conglomerados"), choices = variables_int(), selected = "Conglomerado", multiple = F),
-      selectInput("varESTRATOS",label = h4("Variable para estratos"), choices = variables_int(), selected = "VarStrat", multiple = F), 
-      disabled(downloadButton("tabla", label = "Descargar")),
-      actionButton("actionTAB", label = "Generar tabulado")
-    )
-  })
-  
-  ## Botón generación tabuldado ----
-  #output$botonTAB <- renderUI({
-  #    actionButton("actionTAB", label = "Generar tabulado")
-  #    })
-  
-  
-  ### RENDER IN MAIN PANEL -----
-  ### Render título tabulado 
-  output$tituloTAB <- renderUI({
-    req(input$actionTAB)
-    tagList(
-      h2("Tabulados"),
-      
-    )
-  })
-  
-  
-  ###################################
-  # DATOS WEB INE - COMPUTADOR LOCAL
-  ##################################
-  datos <- reactiveVal(NULL)
-  
-  observeEvent(input$file, {
-    new <- data_input() 
-    datos(new)
-  })
-  
-  
-  observeEvent(input$base_ine, {
-    datos(descarga())
-  })
-  
-  
-  ### TABULADO generación ----
-  
-  tabuladoOK =  eventReactive(input$actionTAB,{
-    
-    ## base datos
-    base_is =  datos()
-    ## lista de variables de interes
-    v_interes =  input$varINTERES
-    ## lista de variables a cruzar
-    if(length(input$varCRUCE)>1){
-      v_cruce = paste0(input$varCRUCE, collapse  = "+")
-    }else{
-      v_cruce = input$varCRUCE
-    }
-    
-    #v_cruce =  input$varCRUCE
-    ## variable subpoblación
-    v_subpob =  input$varSUBPOB
-    # variable de factor de expansión
-    v_fexp1 = input$varFACT1#
-    # variable de id de conglomerado
-    v_conglom = input$varCONGLOM 
-    # variable de estratos
-    v_estratos = input$varESTRATOS 
-    
-    
-    #f_conglom = as.formula(paste0("~",v_conglom))
-    #f_fexp1 = as.formula(paste0("~",v_fexp1))
-    #f_estratos = as.formula(paste0("~",v_estratos))
-    
-    #  list(v_conglom, v_estratos,v_fexp1, v_interes)
-    
-    
-    base_is[[v_interes]] = as.numeric(base_is[[v_interes]])
-    base_is$unit =  as.numeric(base_is[[v_conglom]])
-    base_is$varstrat =  as.numeric(base_is[[v_estratos]])
-    base_is$fe =  as.numeric(base_is[[v_fexp1]])
-    
-    
-    ### Diseño complejo ####
-    dc <- svydesign(ids = ~unit, strata = ~varstrat,
-                    data =  base_is, weights = ~fe)
-    
-    options(survey.lonely.psu = "certainty")
-    
-    
-    ### listas de funciones CALIDAD ####
-    funciones_cal = list(calidad::crear_insumos_media, calidad::crear_insumos_prop, 
-                         calidad::crear_insumos_tot_con, calidad::crear_insumos_tot)
-    funciones_eval = list(calidad::evaluar_calidad_media, calidad::evaluar_calidad_prop, 
-                          calidad::evaluar_calidad_tot_con, calidad::evaluar_calidad_tot)
-    
-    
-    if(input$tipoCALCULO %in% "Media") {
-      num = 1
-    }else if(input$tipoCALCULO %in% "Proporción"){
-      num = 2
-    }else if(input$tipoCALCULO %in% "Suma variable Continua"){
-      num = 3
-    }else if(input$tipoCALCULO %in% "Conteo casos"){
-      num = 4
-    }
-    
-    
-    if(is.null(input$varCRUCE) && is.null(input$varSUBPOB)) {
-      insumos = funciones_cal[[num]](var = !!parse_expr(enexpr(v_interes)), disenio = dc)
-      evaluados =  funciones_eval[[num]](insumos)
-      
-    } else if (is.null(input$varSUBPOB)){
-      #    base_is[[v_cruce]] = as.numeric(base_is[[v_cruce]])
-      #browser()
-      insumos = funciones_cal[[num]](var = !!parse_expr(enexpr(v_interes)),dominios = !!parse_expr(enexpr(v_cruce)) ,disenio = dc)
-      evaluados =  funciones_eval[[num]](insumos)
-      
-    } else if (is.null(input$varCRUCE)){
-      base_is[[v_subpob]] = as.numeric(base_is[[v_subpob]])
-      insumos = funciones_cal[[num]](var = !!parse_expr(enexpr(v_interes)),subpop = !!parse_expr(enexpr(v_subpob)) ,disenio = dc)
-      evaluados =  funciones_eval[[num]](insumos)
-      
-    } else {
-      base_is[[v_subpob]] = as.numeric(base_is[[v_subpob]])
-      insumos = funciones_cal[[num]](var = !!parse_expr(enexpr(v_interes)),subpop = !!parse_expr(enexpr(v_subpob)) ,disenio = dc)
-      evaluados =  funciones_eval[[num]](insumos)
-    }
-    evaluados
-    
-  })
- 
-   ### render Tabulado ####
-  output$tabulado  <- renderText({
-    calidad::tabla_html(tabuladoOK())
-  })
-  
-  ##############################
-  # DESCARGA DE DATOS PÁGINA INE
-  ##############################
-  
+  # DESCARGA: DE DATOS PÁGINA INE ----
   descarga =  eventReactive(input$base_ine, {
     
     # Modal para descarga
@@ -311,20 +153,134 @@ server <- function(input, output) {
     datos
   }) 
   
-
+  # SWITCH: DESCARGA DATOS WEB INE | COMPUTADOR LOCAL ----
   
+  datos <- reactiveVal(NULL)
+  
+  observeEvent(input$file, {
+    new <- data_input() 
+    datos(new)
+  })
+  
+  
+  observeEvent(input$base_ine, {
+    datos(descarga())
+  })
+  
+  ### EXTRACT: names variables input datos ####
+  variables_int <- reactive({
+    if (!is.null(input$file)) {
+      names(data_input())    
+    } else if (!is.null(descarga())) {
+      names(descarga())      
+    }
+  })
+  
+  variable_selected <- reactive({
+    if (!is.null(input$file)) {
+      names(data_input())    
+    } else if (!is.null(descarga())) {
+      names(descarga())      
+    }
+  })
+  
+  
+  
+  
+  ### + R E N D E R - U I + ####
+  
+  # ### RENDER: IN SIDE BAR  ####
+  ### RENDER: selección variables -----
+  output$seleccion1 <- renderUI({
+    tagList(## render selección variables DC
+      #   varSelectInput("varINTERES", label = h3("Seleccione las variables de interés"),variables_int() , selected = 1, multiple = T),
+      selectInput("varINTERES", label = h4("Variable de interés"),choices = variables_int(),  multiple = F),
+      radioButtons("tipoCALCULO", "¿Qué tipo de cálculo deseas realizar?",choices = list("Media","Proporción","Suma variable Continua","Conteo casos"), inline = F ),
+      selectInput("varCRUCE", label = h4("Desagregación"), choices = variables_int(), selected = NULL, multiple = T),
+      uiOutput("etiqueta"),
+      selectInput("varSUBPOB", label = h4("Sub Población"), choices = variables_int(), selected = NULL, multiple = T),
+      selectInput("varFACT1", label = h4("Variable para factor expansión"), choices = variables_int(), selected =   variables_int()[grep(paste0("^",fact_exp,"$",collapse = "|"), variables_int())], multiple = F),
+      selectInput("varCONGLOM", label = h4("Variable para conglomerados"), choices = variables_int(), selected = variables_int()[grep(paste0("^",conglomerados,"$",collapse = "|"), variables_int())], multiple = F),
+      selectInput("varESTRATOS",label = h4("Variable para estratos"), choices = variables_int(), selected = variables_int()[grep(paste0("^",estratos,"$",collapse = "|"), variables_int())], multiple = F), 
+      disabled(downloadButton("tabla", label = "Descargar")),
+      actionButton("actionTAB", label = "Generar tabulado")
+    )})
+  
+  
+  
+  
+  
+  
+output$etiqueta <- renderUI({
+  req(input$varCRUCE >= 1)
+  checkboxInput("ETIQUETAS", "Desea agregar etiquetas \n a variables de desagregación?",value = F)
+})
+  
+  
+  
+  ### RENDER: IN MAIN PANEL -----
+  ### Render título tabulado 
+  output$tituloTAB <- renderUI({
+    req(input$actionTAB)
+    tagList(
+      h2("Tabulados"),
+      
+    )
+  })
+  
+  #### + O U T P U T S * ####
+  
+  ### CREATE: tabulados  ----
+  
+  tabuladoOK =  eventReactive(input$actionTAB,{
 
-  ###############################
-  # DESCARGA DE TABULADO GENERADO#
-  ###############################  
+    tabulado = create_tabulado(base = datos(),   
+               v_interes =  input$varINTERES, 
+               v_cruce = input$varCRUCE, 
+               v_subpob =  input$varSUBPOB, 
+               v_fexp1 = input$varFACT1, 
+               v_conglom = input$varCONGLOM, 
+               v_estratos = input$varESTRATOS, 
+               tipoCALCULO = input$tipoCALCULO)
+    
+    #### opción de etiquetas ###
+    # browser()
+if(input$ETIQUETAS != FALSE){
+
+      paste_labels = function(tabla, base, var_cruce){
+      
+      dt = data.frame(valor = labelled::val_labels(base[[var_cruce]]))
+      dt = tibble::rownames_to_column(dt)
+      
+      tabla[[var_cruce]] =  unlist(lapply(tabla[[var_cruce]] ,function(x) as.character(dt$rowname[dt$valor == x])))
+      tabla
+    }
+    
+    for(i in input$varCRUCE){
+      tabulado = paste_labels(tabla = tabulado, base = datos(), var_cruce = i)
+    
+      }  
+  
+  }  
+    
+tabulado
+  })
+  
+  ### RENDER: Tabulado ####
+  output$tabulado  <- renderText({
+    calidad::tabla_html(tabuladoOK())
+  })
+  
+  # DESCARGA: DE TABULADO GENERADO ----
+  
   # Habilitar botón de descarga
   observeEvent(tabuladoOK(), {
-       enable("tabla")
-     })
-
-
+    enable("tabla")
+  })
+  
+  
   output$tabla <- downloadHandler(
-
+    
     filename = function() {
       paste("data-", Sys.Date(), ".xlsx", sep="")
     },
@@ -334,7 +290,7 @@ server <- function(input, output) {
   )
   
   
-  ##### Pruebas de outputs ####  
+  ##### * Pruebas de outputs * ####  
   output$textcat <- renderPrint({
     paste(tabuladoOK())
   })      
@@ -350,4 +306,3 @@ server <- function(input, output) {
 }
 # Run the application 
 shinyApp(ui = ui, server = server)
-
