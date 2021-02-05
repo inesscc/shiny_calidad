@@ -18,7 +18,7 @@ library(shinybusy)
 library(shinyalert)
 library(writexl)
 library(shinyjs)
-
+library(tibble)
 
 # Cargar funciones ####
 source("download_data.R")
@@ -212,10 +212,12 @@ server <- function(input, output) {
   
   
 output$etiqueta <- renderUI({
-  req(input$varCRUCE >= 1)
+  req(input$varCRUCE >= 1 && labelled::is.labelled(datos()[[input$varCRUCE]]))
   checkboxInput("ETIQUETAS", "Desea agregar etiquetas \n a variables de desagregación?",value = F)
 })
   
+
+
   
   
   ### RENDER: IN MAIN PANEL -----
@@ -244,8 +246,8 @@ output$etiqueta <- renderUI({
                tipoCALCULO = input$tipoCALCULO)
     
     #### opción de etiquetas ###
-    # browser()
-if(input$ETIQUETAS != FALSE){
+    #browser()
+if (input$ETIQUETAS != FALSE && !is.null(input$varCRUCE)) {
 
       paste_labels = function(tabla, base, var_cruce){
       
