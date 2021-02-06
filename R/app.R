@@ -109,7 +109,7 @@ ui <- fluidPage(
 # SERVER ----
 server <- function(input, output) {
   ## parametro para subir archivos pesados  
-  options(shiny.maxRequestSize=1000*1024^2)
+  options(shiny.maxRequestSize=1000*1024^2, scipen=999)
   
   
   # Logo inicial
@@ -212,8 +212,10 @@ server <- function(input, output) {
   
   
 output$etiqueta <- renderUI({
-  req(input$varCRUCE >= 1 && labelled::is.labelled(datos()[[input$varCRUCE]]))
-  checkboxInput("ETIQUETAS", "Desea agregar etiquetas \n a variables de desagregación?",value = F)
+  req(input$varCRUCE >= 1)
+  req(labelled::is.labelled(datos()[[input$varCRUCE[1]]]))
+  checkboxInput("ETIQUETAS", "Sus datos poseen etiquetas, ¿Desea agregregarlas?",value = F)
+
 })
   
 
@@ -246,8 +248,9 @@ output$etiqueta <- renderUI({
                tipoCALCULO = input$tipoCALCULO)
     
     #### opción de etiquetas ###
-    #browser()
-if (input$ETIQUETAS != FALSE && !is.null(input$varCRUCE)) {
+
+    # browser()
+if(input$ETIQUETAS != FALSE && !is.null(input$varCRUCE)){
 
       paste_labels = function(tabla, base, var_cruce){
       
