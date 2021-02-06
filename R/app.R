@@ -250,7 +250,8 @@ output$etiqueta <- renderUI({
     #### opción de etiquetas ###
 
     # browser()
-if(input$ETIQUETAS != FALSE && !is.null(input$varCRUCE)){
+
+if(input$ETIQUETAS != FALSE && !is.null(input$varCRUCE) &&  labelled::is.labelled(datos()[[input$varCRUCE[1]]])){ # 
 
       paste_labels = function(tabla, base, var_cruce){
       

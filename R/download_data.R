@@ -8,8 +8,10 @@ download_data <- function(base_sitio_ine) {
   # Seleccionar la ruta de cada base de datos
   if (base_sitio_ine == "epf") {
     file <- "https://www.ine.cl/docs/default-source/encuesta-de-presupuestos-familiares/bbdd/viii-epf---(junio-2016---julio-2017)/base-personas-viii-epf-(formato-csv).csv?sfvrsn=8cdf62d7_2&download=true"
-    datos <- read_delim(file, delim = ';')
-    datos <- datos[datos$JHOGAR == 1,]
+    datos <- read_delim(file, delim = ';', col_types = cols(.default = "c"))
+    datos <- datos[datos$JHOGAR == 1,] %>% 
+      mutate_at(vars(FE, starts_with("GASTO"), starts_with("ING")), ~stringr::str_replace(. , ",", ".")) %>% 
+      mutate_at(vars(FE, starts_with("GASTO"), starts_with("ING")), as.numeric)
     
   } else if (base_sitio_ine == "ene") {
     file <- "https://www.ine.cl/docs/default-source/ocupacion-y-desocupacion/bbdd/2020/formato-csv/ene-2020-10-son.csv?sfvrsn=35fc8a67_4&download=true"
