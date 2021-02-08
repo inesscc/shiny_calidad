@@ -19,10 +19,12 @@ library(shinyalert)
 library(writexl)
 library(shinyjs)
 library(tibble)
+library(plotly)
 
 # Cargar funciones ####
 source("download_data.R")
 source("create_tabulado.R")
+source("create_plot.R")
 #source("utils.R")
 
 # posibilidad nombres de variables DC"
@@ -100,7 +102,9 @@ ui <- fluidPage(
               tags$div(
                 class="my_table", # set to custom class
                 htmlOutput("tabulado") %>% withSpinner(color="#0dc5c1")),
-              uiOutput("PRUEBAS")
+              uiOutput("PRUEBAS"),
+              div(plotOutput('grafico') %>% withSpinner(color="#0dc5c1"), align = "center")
+              
               
     )
   )
@@ -277,6 +281,14 @@ tabulado
     calidad::tabla_html(tabuladoOK())
   })
   
+  ### RENDER: GRÁFICO DE BARRAS CON PORCENTAJE DE CELDAS POR CATEGORÍA
+   
+  output$grafico  <- renderPlot({
+    create_plot(tabuladoOK())
+    
+  }, height = 100, width = 500)
+
+
   # DESCARGA: DE TABULADO GENERADO ----
   
   # Habilitar botón de descarga
