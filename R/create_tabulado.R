@@ -67,7 +67,7 @@ create_tabulado = function(base, v_interes, v_cruce,  v_subpob, v_fexp1, v_congl
     
   } else {
     base[[v_subpob]] = as.numeric(base[[v_subpob]])
-    insumos = funciones_cal[[num]](var = !!parse_expr(enexpr(v_interes)),subpop = !!parse_expr(enexpr(v_subpob)) ,disenio = dc)
+    insumos = funciones_cal[[num]](var = !!parse_expr(enexpr(v_interes)), dominios = !!parse_expr(enexpr(v_cruce1)), subpop = !!parse_expr(enexpr(v_subpob)) ,disenio = dc)
     evaluados =  funciones_eval[[num]](insumos, publicar = TRUE)
   }
   

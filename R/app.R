@@ -1,4 +1,3 @@
-
 library(calidad)
 library(shiny)
 library(haven)
@@ -129,10 +128,19 @@ server <- function(input, output) {
       
       haven::read_sav(input$file$datapath)
       
-    } else if(grepl(".rds", input$file$datapath)){
+    } else if(grepl(".rds", tolower(input$file$datapath))){
       
       readRDS(input$file$datapath)
-    } # sas, dta, csv, feather, xlsx,
+    } else if(grepl(".dta", tolower(input$file$datapath))){
+      
+      haven::read_dta(input$file$datapath)
+    } else if(grepl(".sas", tolower(input$file$datapath))){
+      
+      haven::read_sas(input$file$datapath)
+    }  else if(grepl(".xlsx", tolower(input$file$datapath))){
+      
+      readxl::read_excel(input$file$datapath)
+    }#Pendiente csv, feather
     
   })
   
@@ -199,16 +207,13 @@ server <- function(input, output) {
       selectInput("varCRUCE", label = h4("Desagregación"), choices = variables_int(), selected = NULL, multiple = T),
       uiOutput("etiqueta"),
       selectInput("varSUBPOB", label = h4("Sub Población"), choices = variables_int(), selected = NULL, multiple = T),
-      selectInput("varFACT1", label = h4("Variable para factor expansión"), choices = variables_int(), selected =   variables_int()[grep(paste0("^",fact_exp,"$",collapse = "|"), variables_int())], multiple = F),
+      selectInput("varFACT1", label = h4("Variable para factor expansión"), choices = variables_int(), selected =  variables_int()[grep(paste0("^",fact_exp,"$",collapse = "|"), variables_int())], multiple = F),
       selectInput("varCONGLOM", label = h4("Variable para conglomerados"), choices = variables_int(), selected = variables_int()[grep(paste0("^",conglomerados,"$",collapse = "|"), variables_int())], multiple = F),
       selectInput("varESTRATOS",label = h4("Variable para estratos"), choices = variables_int(), selected = variables_int()[grep(paste0("^",estratos,"$",collapse = "|"), variables_int())], multiple = F), 
       disabled(downloadButton("tabla", label = "Descargar")),
       actionButton("actionTAB", label = "Generar tabulado")
     )})
-  
-  
-  
-  
+
   
   
 output$etiqueta <- renderUI({
@@ -262,8 +267,16 @@ if(input$ETIQUETAS != FALSE && !is.null(input$varCRUCE) &&  labelled::is.labelle
       tabla
     }
     
+####  al hacer filtros se eliminan categorias, necesitamos sacar etiquetas de base filtrada
+
+      if(!is.null(input$varSUBPOB)){
+        datos2 = datos()[datos()[[input$varSUBPOB]] == 1,]
+      }else{
+        datos2 = datos()
+      }
+      
     for(i in input$varCRUCE){
-      tabulado = paste_labels(tabla = tabulado, base = datos(), var_cruce = i)
+      tabulado = paste_labels(tabla = tabulado, base = datos2, var_cruce = i)
     
       }  
   
@@ -312,3 +325,4 @@ tabulado
 }
 # Run the application 
 shinyApp(ui = ui, server = server)
+
