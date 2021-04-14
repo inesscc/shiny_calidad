@@ -207,8 +207,11 @@ server <- function(input, output) {
     tagList(## render selección variables DC
       #   varSelectInput("varINTERES", label = h3("Seleccione las variables de interés"),variables_int() , selected = 1, multiple = T),
       selectInput("varINTERES", label = h4("Variable de interés"),choices = variables_int(),  multiple = F),
+      uiOutput("denominador"),
       radioButtons("tipoCALCULO", "¿Qué tipo de cálculo deseas realizar?",choices = list("Media","Proporción","Suma variable Continua","Conteo casos"), inline = F ),
       selectInput("varCRUCE", label = h4("Desagregación"), choices = variables_int(), selected = NULL, multiple = T),
+      checkboxInput("IC", "¿Deseas agregar intervalos de confianza?",value = F),
+      checkboxInput("ajuste_ene", "¿Deseas agregar los ajuste del MM ENE?",value = F),
       uiOutput("etiqueta"),
       selectInput("varSUBPOB", label = h4("Sub Población"), choices = variables_int(), selected = NULL, multiple = T),
       selectInput("varFACT1", label = h4("Variable para factor expansión"), choices = variables_int(), selected =  variables_int()[grep(paste0("^",fact_exp,"$",collapse = "|"), variables_int())], multiple = F),
@@ -219,15 +222,17 @@ server <- function(input, output) {
     )})
 
   
-  
 output$etiqueta <- renderUI({
   req(input$varCRUCE >= 1)
   req(labelled::is.labelled(datos()[[input$varCRUCE[1]]]))
   checkboxInput("ETIQUETAS", "Sus datos poseen etiquetas, ¿Desea agregregarlas?",value = F)
 
 })
-  
 
+output$denominador <- renderUI({
+  req(input$tipoCALCULO == "Proporción")
+  selectInput("varDENOM", label = h4("Denominador - Opcional"), choices = variables_int(), selected = NULL, multiple = T)
+})
 
   
   
@@ -241,7 +246,7 @@ output$etiqueta <- renderUI({
     )
   })
   
-  #### + O U T P U T S * ####
+  #### + O U T P U T S + ####
   
   ### CREATE: tabulados  ----
   
@@ -249,12 +254,15 @@ output$etiqueta <- renderUI({
 
     tabulado = create_tabulado(base = datos(),   
                v_interes =  input$varINTERES, 
+               denominador = input$varDENOM,
                v_cruce = input$varCRUCE, 
                v_subpob =  input$varSUBPOB, 
                v_fexp1 = input$varFACT1, 
                v_conglom = input$varCONGLOM, 
                v_estratos = input$varESTRATOS, 
-               tipoCALCULO = input$tipoCALCULO)
+               tipoCALCULO = input$tipoCALCULO,
+               ci = input$IC,
+               ajuste_ene = input$ajuste_ene)
     
     #### opción de etiquetas ###
 
