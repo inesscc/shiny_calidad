@@ -97,12 +97,17 @@ ui <- fluidPage(
               ### render titulo tabulado
               uiOutput("tituloTAB"),
               verbatimTextOutput("PRUEBAS2"),
+              
+              ### render gráfico de resumen
+              div(plotOutput('grafico') %>% withSpinner(color="#0dc5c1"), 
+                  align = "center",
+                  style = "height:200px"),
+              
               ### render tabulado
               tags$div(
                 class="my_table", # set to custom class
                 htmlOutput("tabulado") %>% withSpinner(color="#0dc5c1")),
-              uiOutput("PRUEBAS"),
-              div(plotOutput('grafico') %>% withSpinner(color="#0dc5c1"), align = "center")
+              uiOutput("PRUEBAS")
               
               
     )
@@ -238,13 +243,13 @@ output$denominador <- renderUI({
   
   ### RENDER: IN MAIN PANEL -----
   ### Render título tabulado 
-  output$tituloTAB <- renderUI({
-    req(input$actionTAB)
-    tagList(
-      h2("Tabulados"),
-      
-    )
-  })
+  # output$tituloTAB <- renderUI({
+  #   req(input$actionTAB)
+  #   tagList(
+  #     h2("Tabulados"),
+  #     
+  #   )
+  # })
   
   #### + O U T P U T S + ####
   

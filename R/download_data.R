@@ -20,11 +20,14 @@ download_data <- function(base_sitio_ine) {
   } else if (base_sitio_ine == "enusc") {
     file <- "https://www.ine.cl/docs/default-source/seguridad-ciudadana/bbdd/2019/base-de-datos---xvi-enusc-2019-(csv).csv?sfvrsn=d3465758_2&download=true"
     datos <- read_delim(file, delim = ';')
-    datos <- datos[datos$KISH == 1,]
+    datos <- datos[datos$Kish == 1,]
     
   } else if (base_sitio_ine == "esi") {
     file <- "https://www.ine.cl/docs/default-source/encuesta-suplementaria-de-ingresos/bbdd/csv_esi/2019/esi-2019---personas.csv?sfvrsn=9eb52870_4&download=true"
-    datos <-  read_delim(file, delim = ';')
+    datos <-  read_delim(file, delim = ';',  col_types = cols(.default = "c")) %>% 
+      mutate_at(vars(starts_with("fact_cal"), starts_with("ing")), ~stringr::str_replace(. , ",", ".")) %>% 
+      mutate_at(vars(starts_with("fact_cal"), starts_with("ing")), as.numeric)
+    
     
   } else if (base_sitio_ine == "enut") {
     file <- "https://www.ine.cl/docs/default-source/uso-del-tiempo-tiempo-libre/bbdd/documentos/base_datos_enut_csv.zip?sfvrsn=b399edf0_5"

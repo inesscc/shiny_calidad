@@ -17,14 +17,15 @@ create_plot <- function(tab) {
   tabulado %>% 
     dplyr::group_by(calidad) %>% 
     dplyr::summarise(suma = n()) %>% 
-    dplyr::mutate(porcentaje = suma / sum(suma) * 100) %>% 
+    dplyr::mutate(porcentaje = suma / sum(suma) * 100,
+                  porcentaje_chr = paste0(round(porcentaje), "%"))  %>% 
     dplyr::mutate(row = 1,
                   calidad = forcats::fct_relevel(calidad, labels)) %>% 
     ggplot2::ggplot(aes(x = row, y = porcentaje, fill = calidad)) +
     ggplot2::geom_bar(stat = "identity" ) + 
     ggplot2::scale_fill_manual(values= colors) +
     ggplot2::coord_flip() +
-    ggplot2::geom_text(ggplot2::aes(label = round(porcentaje)), 
+    ggplot2::geom_text(ggplot2::aes(label = porcentaje_chr), 
                        position = ggplot2::position_stack(vjust = 0.5)) +
     ggplot2::theme(axis.text.y = ggplot2::element_blank(),
                    axis.title.y = ggplot2::element_blank(),
