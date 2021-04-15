@@ -97,12 +97,17 @@ ui <- fluidPage(
               ### render titulo tabulado
               uiOutput("tituloTAB"),
               verbatimTextOutput("PRUEBAS2"),
+              
+              ### render gráfico de resumen
+              div(plotOutput('grafico') %>% withSpinner(color="#0dc5c1"), 
+                  align = "center",
+                  style = "height:200px"),
+              
               ### render tabulado
               tags$div(
                 class="my_table", # set to custom class
                 htmlOutput("tabulado") %>% withSpinner(color="#0dc5c1")),
-              uiOutput("PRUEBAS"),
-              div(plotOutput('grafico') %>% withSpinner(color="#0dc5c1"), align = "center")
+              uiOutput("PRUEBAS")
               
               
     )
@@ -207,7 +212,7 @@ server <- function(input, output) {
     tagList(## render selección variables DC
       #   varSelectInput("varINTERES", label = h3("Seleccione las variables de interés"),variables_int() , selected = 1, multiple = T),
       selectInput("varINTERES", label = h4("Variable de interés"),choices = variables_int(),  multiple = F),
-      radioButtons("tipoCALCULO", "¿Qué tipo de cálculo deseas realizar?",choices = list("Media","Proporción","Suma variable Continua","Conteo casos"), inline = F ),
+      radioButtons("tipoCALCULO", "¿Qué tipo de cálculo deseas realizar?",choices = list("Media","Proporción","Suma variable Continua","Conteo casos", "Mediana"), inline = F ),
       selectInput("varCRUCE", label = h4("Desagregación"), choices = variables_int(), selected = NULL, multiple = T),
       uiOutput("etiqueta"),
       selectInput("varSUBPOB", label = h4("Sub Población"), choices = variables_int(), selected = NULL, multiple = T),
@@ -233,13 +238,13 @@ output$etiqueta <- renderUI({
   
   ### RENDER: IN MAIN PANEL -----
   ### Render título tabulado 
-  output$tituloTAB <- renderUI({
-    req(input$actionTAB)
-    tagList(
-      h2("Tabulados"),
-      
-    )
-  })
+  # output$tituloTAB <- renderUI({
+  #   req(input$actionTAB)
+  #   tagList(
+  #     h2("Tabulados"),
+  #     
+  #   )
+  # })
   
   #### + O U T P U T S * ####
   
